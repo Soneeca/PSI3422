@@ -34,8 +34,10 @@ Desmontar: fusermount -u /home/psi3422/pi
 
 ## Camera
 
-
+Ligar Camera: ./Captura
 
 ## Servidor
 
+Abrir Server: ./server
 
+Abrir Cliente: ./cliente 192.168.160.54
