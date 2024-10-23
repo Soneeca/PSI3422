@@ -25,3 +25,17 @@ Senha do Linux: lnx$psi20
 Login do Raspberry PI: pi
 
 Senha do Raspberry PI: rasp23
+
+## Criar Pasta Compartilhadda Entre VM e RASPBERRY
+
+Montar: 
+
+Desmontar: 
+
+## Camera
+
+
+
+## Servidor
+
+
