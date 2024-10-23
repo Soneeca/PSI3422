@@ -13,9 +13,6 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-// Definindo o tipo BYTE como um sinônimo para uint8_t (inteiro de 8 bits sem sinal)
-typedef uint8_t BYTE;
-
 // Função que testa se todos os bytes da memória apontada por buf têm o valor b
 bool testaBytes(BYTE* buf, BYTE b, int n) {
     for (int i = 0; i < n; i++) {
