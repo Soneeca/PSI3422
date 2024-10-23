@@ -28,9 +28,9 @@ Senha do Raspberry PI: rasp23
 
 ## Criar Pasta Compartilhadda Entre VM e RASPBERRY
 
-Montar: 
+Montar: sshfs pi@192.168.0.54: /home/psi3422/pi
 
-Desmontar: 
+Desmontar: fusermount -u /home/psi3422/pi 
 
 ## Camera
 
