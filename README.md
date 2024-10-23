@@ -26,7 +26,7 @@ Login do Raspberry PI: pi
 
 Senha do Raspberry PI: rasp23
 
-## Criar Pasta Compartilhadda Entre VM e RASPBERRY
+## Criar Pasta Compartilhada Entre VM e RASPBERRY
 
 Montar: sshfs pi@192.168.0.54: /home/psi3422/pi
 
