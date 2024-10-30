@@ -6,11 +6,6 @@
 using namespace std;
 using namespace cv;
 
-double timeSinceEpoch() {
-    return chrono::duration_cast<chrono::milliseconds>(
-               chrono::system_clock::now().time_since_epoch()).count() / 1000.0;
-}
-
 int main(int argc, char *argv[]) {
     if (argc != 2) {
         cerr << "Uso: camclient2 <IP do servidor>" << endl;
