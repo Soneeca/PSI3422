@@ -56,6 +56,32 @@ public:
         img.create(rows, cols);
         receiveBytes(img.total() * img.elemSize(), img.data);
     }
+
+    // Método para enviar imagem com compressão JPEG
+    void sendImgComp(const Mat& img) {
+        vector<BYTE> buf;
+        vector<int> params = {IMWRITE_JPEG_QUALITY, 90};  // Configura a qualidade JPEG para 90%
+        imencode(".jpg", img, buf, params);               // Comprime a imagem
+
+        uint32_t buf_size = buf.size();
+        sendUint(buf_size);                               // Envia o tamanho do buffer comprimido
+        sendBytes(buf_size, buf.data());                  // Envia os dados comprimidos
+    }
+
+    // Método para receber imagem com compressão JPEG
+    void receiveImgComp(Mat& img) {
+        uint32_t buf_size;
+        receiveUint(buf_size);                            // Recebe o tamanho do buffer comprimido
+
+        vector<BYTE> buf(buf_size);
+        receiveBytes(buf_size, buf.data());               // Recebe os dados comprimidos
+
+        img = imdecode(buf, IMREAD_COLOR);                // Decodifica a imagem
+        if (img.empty()) {
+            cerr << "Erro ao descomprimir imagem" << endl;
+            exit(1);
+        }
+    }
 };
 
 class SERVER : public DEVICE {
