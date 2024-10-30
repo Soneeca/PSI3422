@@ -39,28 +39,10 @@ public:
         m = ntohl(m);
     }
 
-    void sendImg(const Mat_<Vec3b>& img) {
-        if (!img.isContinuous()) {
-            cerr << "Erro: imagem não está em armazenamento contínuo!" << endl;
-            exit(1);
-        }
-        sendUint(img.rows);
-        sendUint(img.cols);
-        sendBytes(img.total() * img.elemSize(), img.data);
-    }
-
-    void receiveImg(Mat_<Vec3b>& img) {
-        uint32_t rows, cols;
-        receiveUint(rows);
-        receiveUint(cols);
-        img.create(rows, cols);
-        receiveBytes(img.total() * img.elemSize(), img.data);
-    }
-
     // Método para enviar imagem com compressão JPEG
     void sendImgComp(const Mat& img) {
         vector<BYTE> buf;
-        vector<int> params = {IMWRITE_JPEG_QUALITY, 90};  // Configura a qualidade JPEG para 90%
+        vector<int> params = {IMWRITE_JPEG_QUALITY, 50};  // Reduz qualidade JPEG para 50%
         imencode(".jpg", img, buf, params);               // Comprime a imagem
 
         uint32_t buf_size = buf.size();
