@@ -38,8 +38,7 @@ int main(int argc, char *argv[]) {
         frameCount++; // Incrementa a contagem de quadros
 
         // Verifica se 10 segundos se passaram
-        double currentTime = timeSinceEpoch();
-        if (currentTime - t1 >= 10.0) {
+        if (timeSinceEpoch() - t1 >= 10.0) {
             double t2 = timeSinceEpoch();
             double t = t2 - t1;
             fps = frameCount / t; // Calcula FPS
