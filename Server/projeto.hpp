@@ -6,6 +6,7 @@
 #include <iostream>
 #include <cstring>
 #include <string>
+#include <vector>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -14,7 +15,45 @@
 using namespace std;
 typedef uint8_t BYTE;
 
-class SERVER {
+class DEVICE {
+public:
+    virtual ~DEVICE() = default;
+
+    virtual void sendBytes(int nBytesToSend, BYTE *buf) = 0;
+    virtual void receiveBytes(int nBytesToReceive, BYTE *buf) = 0;
+
+    static void *get_in_addr(struct sockaddr *sa) {
+        return sa->sa_family == AF_INET ? 
+               (void*)&(((struct sockaddr_in*)sa)->sin_addr) : 
+               (void*)&(((struct sockaddr_in6*)sa)->sin6_addr);
+    }
+
+    void sendUint(uint32_t m) {
+        m = htonl(m);
+        sendBytes(sizeof(m), reinterpret_cast<BYTE*>(&m));
+    }
+
+    void receiveUint(uint32_t& m) {
+        receiveBytes(sizeof(m), reinterpret_cast<BYTE*>(&m));
+        m = ntohl(m);
+    }
+
+    void sendVb(const vector<BYTE>& vb) {
+        uint32_t size = htonl(vb.size());
+        sendBytes(sizeof(size), reinterpret_cast<BYTE*>(&size));
+        sendBytes(vb.size(), const_cast<BYTE*>(vb.data()));
+    }
+
+    void receiveVb(vector<BYTE>& vb) {
+        uint32_t size;
+        receiveBytes(sizeof(size), reinterpret_cast<BYTE*>(&size));
+        size = ntohl(size);
+        vb.resize(size);
+        receiveBytes(size, vb.data());
+    }
+};
+
+class SERVER : public DEVICE {
 public:
     SERVER() {
         sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -29,7 +68,7 @@ public:
         }
     }
 
-    ~SERVER() {
+    ~SERVER() override {
         std::cout << "server: fechei conexao." << std::endl;
         close(new_fd);
         close(sockfd);
@@ -47,38 +86,22 @@ public:
         std::cout << "server: recebi conexao de " << client_ip << std::endl;
     }
 
-    void sendBytes(int nBytesToSend, BYTE *buf) {
+    void sendBytes(int nBytesToSend, BYTE *buf) override {
         int sentBytes = send(new_fd, buf, nBytesToSend, 0);
         if (sentBytes == -1) perror("Erro ao enviar bytes");
     }
 
-    void receiveBytes(int nBytesToReceive, BYTE *buf) {
+    void receiveBytes(int nBytesToReceive, BYTE *buf) override {
         int receivedBytes = recv(new_fd, buf, nBytesToReceive, 0);
         if (receivedBytes == -1) perror("Erro ao receber bytes");
-    }
-
-    void sendUint(uint32_t m) {
-        m = htonl(m);
-        sendBytes(sizeof(m), reinterpret_cast<BYTE*>(&m));
-    }
-
-    void receiveUint(uint32_t& m) {
-        receiveBytes(sizeof(m), reinterpret_cast<BYTE*>(&m));
-        m = ntohl(m);
     }
 
 private:
     int sockfd, new_fd;
     struct sockaddr_in server_addr, client_addr;
-
-    static void *get_in_addr(struct sockaddr *sa) {
-        return sa->sa_family == AF_INET ? 
-               (void*)&(((struct sockaddr_in*)sa)->sin_addr) : 
-               (void*)&(((struct sockaddr_in6*)sa)->sin6_addr);
-    }
 };
 
-class CLIENT {
+class CLIENT : public DEVICE {
 public:
     CLIENT(const string& endereco) {
         std::cout << "client: conectando a " << endereco << std::endl;
@@ -98,33 +121,31 @@ public:
         }
     }
 
-    ~CLIENT() {
+    ~CLIENT() override {
         close(sockfd);
     }
 
-    void sendBytes(int nBytesToSend, BYTE *buf) {
+    void sendBytes(int nBytesToSend, BYTE *buf) override {
         int sentBytes = send(sockfd, buf, nBytesToSend, 0);
         if (sentBytes == -1) perror("Erro ao enviar bytes");
     }
 
-    void receiveBytes(int nBytesToReceive, BYTE *buf) {
+    void receiveBytes(int nBytesToReceive, BYTE *buf) override {
         int receivedBytes = recv(sockfd, buf, nBytesToReceive, 0);
         if (receivedBytes == -1) perror("Erro ao receber bytes");
-    }
-
-    void sendUint(uint32_t m) {
-        m = htonl(m);
-        sendBytes(sizeof(m), reinterpret_cast<BYTE*>(&m));
-    }
-
-    void receiveUint(uint32_t& m) {
-        receiveBytes(sizeof(m), reinterpret_cast<BYTE*>(&m));
-        m = ntohl(m);
     }
 
 private:
     int sockfd;
     struct sockaddr_in server_addr;
 };
+
+// Função para testar se todos os bytes em um vetor têm o valor especificado
+bool testaVb(const vector<BYTE>& vb, BYTE b) {
+    for (BYTE byte : vb) {
+        if (byte != b) return false;
+    }
+    return true;
+}
 
 #endif // PROJETO_HPP
