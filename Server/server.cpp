@@ -1,16 +1,17 @@
-// server6c.cpp
+// server8.cpp
+// testa sendVb e receiveVb
 #include "projeto.hpp"
-#include <iostream>
-
-int main() {
+int main(void) {
     SERVER server;
     server.waitConnection();
+    vector<BYTE> vb;
 
-    server.sendUint(1234567890);
-
-    uint32_t u;
-    server.receiveUint(u);
-    std::cout << u << std::endl;
-
-    return 0;
+    vb.assign(100000, 111);
+    server.sendVb(vb);
+    server.receiveVb(vb);
+    if (testaVb(vb, 222)) printf("Recebi corretamente %lu bytes %u\n", vb.size(), 222);
+    else printf("Erro na recepcao de %lu bytes %u\n", vb.size(), 222);
+    
+    vb.assign(100000, 2);
+    server.sendVb(vb);
 }
