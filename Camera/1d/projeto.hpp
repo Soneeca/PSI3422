@@ -39,26 +39,25 @@ public:
         m = ntohl(m);
     }
 
-    // Método para enviar imagem com compressão JPEG
+    // Método para enviar imagem comprimida com JPEG
     void sendImgComp(const Mat& img) {
-        vector<BYTE> buf;
-        vector<int> params = {IMWRITE_JPEG_QUALITY, 50};  // Reduz qualidade JPEG para 50%
-        imencode(".jpg", img, buf, params);               // Comprime a imagem
+        vector<BYTE> vb;
+        vector<int> params = {IMWRITE_JPEG_QUALITY, 80};  // Configura a qualidade para 80%
+        imencode(".jpg", img, vb, params);               // Comprime a imagem
 
-        uint32_t buf_size = buf.size();
-        sendUint(buf_size);                               // Envia o tamanho do buffer comprimido
-        sendBytes(buf_size, buf.data());                  // Envia os dados comprimidos
+        sendUint(vb.size());                             // Envia o tamanho do vetor comprimido
+        sendBytes(vb.size(), vb.data());                 // Envia o vetor de bytes comprimido
     }
 
-    // Método para receber imagem com compressão JPEG
+    // Método para receber imagem comprimida com JPEG
     void receiveImgComp(Mat& img) {
         uint32_t buf_size;
-        receiveUint(buf_size);                            // Recebe o tamanho do buffer comprimido
+        receiveUint(buf_size);                           // Recebe o tamanho do vetor comprimido
 
-        vector<BYTE> buf(buf_size);
-        receiveBytes(buf_size, buf.data());               // Recebe os dados comprimidos
+        vector<BYTE> vb(buf_size);
+        receiveBytes(buf_size, vb.data());               // Recebe o vetor de bytes comprimido
 
-        img = imdecode(buf, IMREAD_COLOR);                // Decodifica a imagem
+        img = imdecode(vb, IMREAD_COLOR);                // Decodifica o vetor para uma imagem
         if (img.empty()) {
             cerr << "Erro ao descomprimir imagem" << endl;
             exit(1);
