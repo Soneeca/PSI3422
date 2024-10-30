@@ -20,11 +20,15 @@ Login do Linux: psi
 
 Senha do Linux: lnx$psi20
 
+Compilacao no Linux: compila programa -ocv -v3
+
 ## RASPBERRY
 
 Login do Raspberry PI: pi
 
 Senha do Raspberry PI: rasp23
+
+Compilacao no Rasp: compila programa -ocv
 
 ## Criar Pasta Compartilhada Entre VM e RASPBERRY
 
