@@ -39,29 +39,22 @@ public:
         m = ntohl(m);
     }
 
-    // Método para enviar imagem com compressão JPEG
-    void sendImgComp(const Mat& img) {
-        vector<BYTE> buf;
-        vector<int> params = {IMWRITE_JPEG_QUALITY, 90};  // Configura a qualidade JPEG para 90%
-        imencode(".jpg", img, buf, params);               // Comprime a imagem
-
-        sendUint(buf.size());                             // Envia o tamanho do buffer comprimido
-        sendBytes(buf.size(), buf.data());                // Envia os dados comprimidos
-    }
-
-    // Método para receber imagem com compressão JPEG
-    void receiveImgComp(Mat& img) {
-        uint32_t buf_size;
-        receiveUint(buf_size);                           // Recebe o tamanho do buffer comprimido
-
-        vector<BYTE> buf(buf_size);
-        receiveBytes(buf_size, buf.data());              // Recebe os dados comprimidos
-
-        img = imdecode(buf, IMREAD_COLOR);               // Descomprime e carrega a imagem
-        if (img.empty()) {
-            cerr << "Erro ao descomprimir imagem" << endl;
+    void sendImg(const Mat_<Vec3b>& img) {
+        if (!img.isContinuous()) {
+            cerr << "Erro: imagem não está em armazenamento contínuo!" << endl;
             exit(1);
         }
+        sendUint(img.rows);
+        sendUint(img.cols);
+        sendBytes(img.total() * img.elemSize(), img.data);
+    }
+
+    void receiveImg(Mat_<Vec3b>& img) {
+        uint32_t rows, cols;
+        receiveUint(rows);
+        receiveUint(cols);
+        img.create(rows, cols);
+        receiveBytes(img.total() * img.elemSize(), img.data);
     }
 };
 
@@ -99,13 +92,27 @@ public:
     }
 
     void sendBytes(int nBytesToSend, BYTE *buf) override {
-        int sentBytes = send(new_fd, buf, nBytesToSend, 0);
-        if (sentBytes == -1) perror("Erro ao enviar bytes");
+        int totalSent = 0;
+        while (totalSent < nBytesToSend) {
+            int sentBytes = send(new_fd, buf + totalSent, nBytesToSend - totalSent, 0);
+            if (sentBytes == -1) {
+                perror("Erro ao enviar bytes");
+                break;
+            }
+            totalSent += sentBytes;
+        }
     }
 
     void receiveBytes(int nBytesToReceive, BYTE *buf) override {
-        int receivedBytes = recv(new_fd, buf, nBytesToReceive, 0);
-        if (receivedBytes == -1) perror("Erro ao receber bytes");
+        int totalReceived = 0;
+        while (totalReceived < nBytesToReceive) {
+            int receivedBytes = recv(new_fd, buf + totalReceived, nBytesToReceive - totalReceived, 0);
+            if (receivedBytes == -1) {
+                perror("Erro ao receber bytes");
+                break;
+            }
+            totalReceived += receivedBytes;
+        }
     }
 
 private:
@@ -138,13 +145,27 @@ public:
     }
 
     void sendBytes(int nBytesToSend, BYTE *buf) override {
-        int sentBytes = send(sockfd, buf, nBytesToSend, 0);
-        if (sentBytes == -1) perror("Erro ao enviar bytes");
+        int totalSent = 0;
+        while (totalSent < nBytesToSend) {
+            int sentBytes = send(sockfd, buf + totalSent, nBytesToSend - totalSent, 0);
+            if (sentBytes == -1) {
+                perror("Erro ao enviar bytes");
+                break;
+            }
+            totalSent += sentBytes;
+        }
     }
 
     void receiveBytes(int nBytesToReceive, BYTE *buf) override {
-        int receivedBytes = recv(sockfd, buf, nBytesToReceive, 0);
-        if (receivedBytes == -1) perror("Erro ao receber bytes");
+        int totalReceived = 0;
+        while (totalReceived < nBytesToReceive) {
+            int receivedBytes = recv(sockfd, buf + totalReceived, nBytesToReceive - totalReceived, 0);
+            if (receivedBytes == -1) {
+                perror("Erro ao receber bytes");
+                break;
+            }
+            totalReceived += receivedBytes;
+        }
     }
 
 private:
