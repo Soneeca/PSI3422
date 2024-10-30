@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
 
     CLIENT client(argv[1]);
 
-    Mat frame;
+    Mat_<COR> frame;  // Declara `frame` explicitamente como `Mat_<COR>`
     namedWindow("Recebendo Quadro", WINDOW_AUTOSIZE);
 
     double t1 = timeSinceEpoch();
@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
     char confirm = '0';
 
     while (ch < 0) {
-        client.receiveImgComp(frame);
+        client.receiveImgComp(frame);  // Agora `frame` tem o tipo correto para `receiveImgComp`
         if (frame.empty()) break;
 
         imshow("Recebendo Quadro", frame);
