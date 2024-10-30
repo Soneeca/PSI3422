@@ -1,17 +1,16 @@
-//server6b.cpp – rodar no Raspberry
-//testa sendBytes e receiveBytes
+// server6c.cpp
 #include "projeto.hpp"
-int main(void) {
- SERVER server;
- server.waitConnection();
+#include <iostream>
 
- const int n=100000;
- BYTE buf[n];
- memset(buf,111,n); //insere 111 em n bytes a partir do endereço buf
- server.sendBytes(n,buf);
- server.receiveBytes(n,buf);
- if (testaBytes(buf,214,n)) printf("Recebeu corretamente %d bytes %d\n",n,214);
- else printf("Erro na recepcao de %d bytes %d\n",n,214);
- memset(buf,111,n);
- server.sendBytes(n,buf);
+int main() {
+    SERVER server;
+    server.waitConnection();
+
+    server.sendUint(1234567890);
+
+    uint32_t u;
+    server.receiveUint(u);
+    std::cout << u << std::endl;
+
+    return 0;
 }
