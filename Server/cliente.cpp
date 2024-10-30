@@ -1,20 +1,19 @@
-// client6c.cpp
+// client8.cpp
+// testa sendVb e receiveVb
 #include "projeto.hpp"
-#include <iostream>
-
 int main(int argc, char *argv[]) {
-    if (argc != 2) {
-        std::cerr << "Uso: client6c <IP do servidor>" << std::endl;
-        return 1;
-    }
-
+    if (argc != 2) erro("client6 servidorIpAddr\n");
     CLIENT client(argv[1]);
+    vector<BYTE> vb;
 
-    uint32_t u;
-    client.receiveUint(u);
-    std::cout << u << std::endl;
+    client.receiveVb(vb);
+    if (testaVb(vb, 111)) printf("Recebi corretamente %lu bytes %u\n", vb.size(), 111);
+    else printf("Erro na recepcao de %lu bytes %u\n", vb.size(), 111);
 
-    client.sendUint(3333333333);
+    vb.assign(100000, 222);
+    client.sendVb(vb);
 
-    return 0;
+    client.receiveVb(vb);
+    if (testaVb(vb, 1)) printf("Recebi corretamente %lu bytes %u\n", vb.size(), 1);
+    else printf("Erro na recepcao de %lu bytes %u\n", vb.size(), 1);
 }
