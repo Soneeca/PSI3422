@@ -40,7 +40,7 @@ public:
     }
 
     // Método para enviar imagem comprimida com JPEG
-    void sendImgComp(const Mat& img) {
+    void sendImgComp(const Mat_<COR>& img) {
         vector<BYTE> vb;
         vector<int> params = {IMWRITE_JPEG_QUALITY, 80};  // Configura a qualidade para 80%
         imencode(".jpg", img, vb, params);               // Comprime a imagem
@@ -50,14 +50,14 @@ public:
     }
 
     // Método para receber imagem comprimida com JPEG
-    void receiveImgComp(Mat& img) {
+    void receiveImgComp(Mat_<COR>& img) {
         uint32_t buf_size;
         receiveUint(buf_size);                           // Recebe o tamanho do vetor comprimido
 
         vector<BYTE> vb(buf_size);
         receiveBytes(buf_size, vb.data());               // Recebe o vetor de bytes comprimido
 
-        img = imdecode(vb, IMREAD_COLOR);                // Decodifica o vetor para uma imagem
+        img = imdecode(vb, 1);                           // Decodifica o vetor para uma imagem colorida
         if (img.empty()) {
             cerr << "Erro ao descomprimir imagem" << endl;
             exit(1);
