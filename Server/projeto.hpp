@@ -87,13 +87,27 @@ public:
     }
 
     void sendBytes(int nBytesToSend, BYTE *buf) override {
-        int sentBytes = send(new_fd, buf, nBytesToSend, 0);
-        if (sentBytes == -1) perror("Erro ao enviar bytes");
+        int totalSent = 0;
+        while (totalSent < nBytesToSend) {
+            int sentBytes = send(new_fd, buf + totalSent, nBytesToSend - totalSent, 0);
+            if (sentBytes == -1) {
+                perror("Erro ao enviar bytes");
+                break;
+            }
+            totalSent += sentBytes;
+        }
     }
 
     void receiveBytes(int nBytesToReceive, BYTE *buf) override {
-        int receivedBytes = recv(new_fd, buf, nBytesToReceive, 0);
-        if (receivedBytes == -1) perror("Erro ao receber bytes");
+        int totalReceived = 0;
+        while (totalReceived < nBytesToReceive) {
+            int receivedBytes = recv(new_fd, buf + totalReceived, nBytesToReceive - totalReceived, 0);
+            if (receivedBytes == -1) {
+                perror("Erro ao receber bytes");
+                break;
+            }
+            totalReceived += receivedBytes;
+        }
     }
 
 private:
@@ -126,13 +140,27 @@ public:
     }
 
     void sendBytes(int nBytesToSend, BYTE *buf) override {
-        int sentBytes = send(sockfd, buf, nBytesToSend, 0);
-        if (sentBytes == -1) perror("Erro ao enviar bytes");
+        int totalSent = 0;
+        while (totalSent < nBytesToSend) {
+            int sentBytes = send(sockfd, buf + totalSent, nBytesToSend - totalSent, 0);
+            if (sentBytes == -1) {
+                perror("Erro ao enviar bytes");
+                break;
+            }
+            totalSent += sentBytes;
+        }
     }
 
     void receiveBytes(int nBytesToReceive, BYTE *buf) override {
-        int receivedBytes = recv(sockfd, buf, nBytesToReceive, 0);
-        if (receivedBytes == -1) perror("Erro ao receber bytes");
+        int totalReceived = 0;
+        while (totalReceived < nBytesToReceive) {
+            int receivedBytes = recv(sockfd, buf + totalReceived, nBytesToReceive - totalReceived, 0);
+            if (receivedBytes == -1) {
+                perror("Erro ao receber bytes");
+                break;
+            }
+            totalReceived += receivedBytes;
+        }
     }
 
 private:
