@@ -1,13 +1,19 @@
-// camclient1.cpp
 #include "projeto.hpp"
 #include <opencv2/opencv.hpp>
+#include <iostream>
+#include <chrono>
 
 using namespace std;
 using namespace cv;
 
+double timeSinceEpoch() {
+    return chrono::duration_cast<chrono::milliseconds>(
+               chrono::system_clock::now().time_since_epoch()).count() / 1000.0;
+}
+
 int main(int argc, char *argv[]) {
     if (argc != 2) {
-        cerr << "Uso: camclient1 <IP do servidor>" << endl;
+        cerr << "Uso: camclient2 <IP do servidor>" << endl;
         return 1;
     }
 
@@ -15,43 +21,26 @@ int main(int argc, char *argv[]) {
 
     Mat_<Vec3b> frame;
     namedWindow("Recebendo Quadro", WINDOW_AUTOSIZE);
+
+    double t1 = timeSinceEpoch();
+    int ch = -1;
+    int i = 0; // Contador de quadros recebidos
     char confirm = '0';
 
-    // Variáveis para controle de FPS
-    double t1 = timeSinceEpoch(); // Tempo inicial
-    int frameCount = 0; // Contador de quadros recebidos
-    double fps = 0.0; // Variável para armazenar FPS
-
-    while (true) {
+    while (ch < 0) {
         client.receiveImg(frame);
         if (frame.empty()) break;
 
         imshow("Recebendo Quadro", frame);
-        frameCount++; // Incrementa a contagem de quadros
-
-        // Verifica se 10 segundos se passaram
-        if (timeSinceEpoch() - t1 >= 10.0) {
-            double t2 = timeSinceEpoch();
-            double t = t2 - t1;
-            fps = frameCount / t; // Calcula FPS
-
-            // Imprime a quantidade de quadros e FPS
-            printf("Quadros=%d Tempo=%8.2fs FPS=%8.2f\n", frameCount, t, fps);
-
-            // Reseta contadores para o próximo período
-            t1 = t2;
-            frameCount = 0; // Reseta a contagem de quadros
-        }
-
-        int ch = waitKey(30);
-        if (ch == 27) {  // Encerra ao pressionar ESC
-            confirm = 's';
-            client.sendBytes(1, reinterpret_cast<BYTE*>(&confirm));
-            break;
-        }
-
+        ch = waitKey(1);
+        i++;  // Incrementa o contador de quadros
         client.sendBytes(1, reinterpret_cast<BYTE*>(&confirm));
     }
+
+    double t2 = timeSinceEpoch();
+    double t = t2 - t1;
+    printf("Quadros=%d tempo=%8.2fs fps=%8.2f\n", i, t, i / t);
+
     destroyAllWindows();
     return 0;
 }
