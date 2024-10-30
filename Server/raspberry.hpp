@@ -8,6 +8,11 @@
 
 using namespace std;
 
+typedef uint8_t GRY;
+#include <opencv2/opencv.hpp>
+using namespace cv;
+typedef Vec3b COR;
+
 // Função que imprime uma mensagem de erro e encerra o programa
 void erro(string mensagem) {
     cerr << "Erro: " << mensagem << endl;
