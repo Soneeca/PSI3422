@@ -30,15 +30,21 @@ public:
     }
 
     ~SERVER() {
+        std::cout << "server: fechei conexao." << std::endl;
         close(new_fd);
         close(sockfd);
     }
 
     void waitConnection() {
+        std::cout << "server: Esperando conexao..." << std::endl;
         listen(sockfd, 1);
         socklen_t sin_size = sizeof(client_addr);
         new_fd = accept(sockfd, (struct sockaddr *)&client_addr, &sin_size);
         if (new_fd < 0) perror("Erro ao aceitar conexão");
+
+        char client_ip[INET6_ADDRSTRLEN];
+        inet_ntop(client_addr.sin_family, get_in_addr((struct sockaddr *)&client_addr), client_ip, sizeof(client_ip));
+        std::cout << "server: recebi conexao de " << client_ip << std::endl;
     }
 
     void sendBytes(int nBytesToSend, BYTE *buf) {
@@ -52,23 +58,31 @@ public:
     }
 
     void sendUint(uint32_t m) {
-        m = htonl(m); // Converte para big endian
+        m = htonl(m);
         sendBytes(sizeof(m), reinterpret_cast<BYTE*>(&m));
     }
 
     void receiveUint(uint32_t& m) {
         receiveBytes(sizeof(m), reinterpret_cast<BYTE*>(&m));
-        m = ntohl(m); // Converte para little endian
+        m = ntohl(m);
     }
 
 private:
     int sockfd, new_fd;
     struct sockaddr_in server_addr, client_addr;
+
+    static void *get_in_addr(struct sockaddr *sa) {
+        return sa->sa_family == AF_INET ? 
+               (void*)&(((struct sockaddr_in*)sa)->sin_addr) : 
+               (void*)&(((struct sockaddr_in6*)sa)->sin6_addr);
+    }
 };
 
 class CLIENT {
 public:
     CLIENT(const string& endereco) {
+        std::cout << "client: conectando a " << endereco << std::endl;
+
         sockfd = socket(AF_INET, SOCK_STREAM, 0);
         if (sockfd < 0) perror("Erro ao criar socket");
 
@@ -99,13 +113,13 @@ public:
     }
 
     void sendUint(uint32_t m) {
-        m = htonl(m); // Converte para big endian
+        m = htonl(m);
         sendBytes(sizeof(m), reinterpret_cast<BYTE*>(&m));
     }
 
     void receiveUint(uint32_t& m) {
         receiveBytes(sizeof(m), reinterpret_cast<BYTE*>(&m));
-        m = ntohl(m); // Converte para little endian
+        m = ntohl(m);
     }
 
 private:
