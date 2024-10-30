@@ -1,17 +1,9 @@
 // camclient1.cpp
 #include "projeto.hpp"
 #include <opencv2/opencv.hpp>
-#include <chrono> // Inclui a biblioteca para medição de tempo
 
 using namespace std;
 using namespace cv;
-
-// Função para obter o tempo em segundos desde a época
-double timeSinceEpoch() {
-    return chrono::duration_cast<chrono::milliseconds>(
-        chrono::system_clock::now().time_since_epoch()
-    ).count() / 1000.0; // Converte para segundos
-}
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
