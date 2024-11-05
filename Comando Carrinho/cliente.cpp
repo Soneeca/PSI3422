@@ -7,7 +7,6 @@ using namespace cv;
 
 int estado = 0;  // 0 = sem ação, 1-9 = comandos do teclado virtual
 bool mousePressed = false;  // Estado do mouse
-int estadoAnterior = 0;  // Variável para controlar a alteração do estado
 
 // Função de callback para o mouse
 void on_mouse(int event, int x, int y, int, void* userdata) {
@@ -28,10 +27,11 @@ void on_mouse(int event, int x, int y, int, void* userdata) {
         }
     } else if (event == EVENT_LBUTTONUP) {
         mousePressed = false;
+        estado = 0;  // Reseta o estado quando o botão do mouse é solto
     }
 }
 
-void desenhaTeclado(Mat_<COR> &teclado) {
+void desenhaTeclado(Mat_<Vec3b> &teclado) {
     teclado.setTo(Scalar(128, 128, 128));  // Fundo cinza
 
     for (int i = 0; i < 3; i++) {
@@ -48,7 +48,7 @@ void desenhaTeclado(Mat_<COR> &teclado) {
             } else if (i == 0 && j == 1) { // ↑
                 line(teclado, Point(x + 40, y + 20), Point(x + 40, y + 60), cor, 2);
             } else if (i == 0 && j == 2) { // ↗
-                line(teclado, Point(x + 20, y + 60), Point(x + 20, y + 60), cor, 2);
+                line(teclado, Point(x + 20, y + 60), Point(x + 60, y + 20), cor, 2);
             } else if (i == 1 && j == 0) { // ↰ (L invertido)
                 line(teclado, Point(x + 60, y + 40), Point(x + 20, y + 40), cor, 2);
                 line(teclado, Point(x + 20, y + 40), Point(x + 20, y + 60), cor, 2);
@@ -79,17 +79,26 @@ int main(int argc, char *argv[]) {
     string video_out = (argc > 2) ? argv[2] : "";
     char modo = (argc > 3) ? argv[3][0] : 't';
     VideoWriter vo;
-    if (!video_out.empty()) vo.open(video_out, VideoWriter::fourcc('X', 'V', 'I', 'D'), 30, Size(640, 240));
+    if (!video_out.empty()) vo.open(video_out, VideoWriter::fourcc('X', 'V', 'I', 'D'), 30, Size(480, 240));  // Configuração de gravação
 
     namedWindow("Controle", WINDOW_NORMAL);
     setMouseCallback("Controle", on_mouse);
 
-    Mat_<COR> teclado(240, 240, Vec3b(128, 128, 128));
-    Mat_<COR> frame, display;
+    Mat_<Vec3b> teclado(240, 240, Vec3b(128, 128, 128));
+    Mat_<Vec3b> frame, display;
     char confirm = '0';
 
     while (true) {
-        client.sendBytes(1, reinterpret_cast<BYTE*>(&confirm));
+        // Envia o estado se o mouse estiver pressionado
+        if (mousePressed) {
+            if (estado != 0) {
+                confirm = '0' + estado; // Atualiza o comando baseado no estado
+            } else {
+                confirm = '0'; // Nenhum comando
+            }
+            client.sendBytes(1, reinterpret_cast<BYTE*>(&confirm));
+        }
+
         client.receiveImgComp(frame);
         if (frame.empty()) break;
 
@@ -99,21 +108,13 @@ int main(int argc, char *argv[]) {
         desenhaTeclado(teclado);  // Desenha o teclado com o estado atualizado
 
         imshow("Controle", display);
-        if (!video_out.empty()) vo << display;
+        if (!video_out.empty()) vo << display;  // Salva o quadro atualizado no vídeo
 
         char ch = waitKey(1);
         if (ch == 27) {  // ESC para sair
             confirm = 's';
             client.sendBytes(1, reinterpret_cast<BYTE*>(&confirm));
             break;
-        }
-
-        if (estado != 0 && estado != estadoAnterior) {
-            confirm = '0' + estado;
-            client.sendBytes(1, reinterpret_cast<BYTE*>(&confirm));  // Envia o estado ao servidor
-            estadoAnterior = estado;  // Atualiza o estado anterior
-        } else if (estado == 0) {
-            confirm = '0';
         }
     }
 
