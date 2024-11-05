@@ -99,15 +99,23 @@ int main(int argc, char *argv[]) {
             client.sendBytes(1, reinterpret_cast<BYTE*>(&confirm));
         }
 
+        // Recebe a imagem do servidor
         client.receiveImgComp(frame);
-        if (frame.empty()) break;
+        if (frame.empty()) {
+            cerr << "Erro ao receber imagem do servidor" << endl;
+            break; // Caso não receba uma imagem, sai do loop
+        }
 
-        if (modo == 't') hconcat(teclado, frame, display);
-        else display = frame;
+        // Exibe a imagem recebida e desenha o teclado
+        if (modo == 't') {
+            hconcat(teclado, frame, display); // Adiciona o teclado à imagem recebida
+        } else {
+            display = frame; // Exibe apenas a imagem recebida
+        }
 
         desenhaTeclado(teclado);  // Desenha o teclado com o estado atualizado
 
-        imshow("Controle", display);
+        imshow("Controle", display); // Mostra a janela com a imagem combinada
         if (!video_out.empty()) vo << display;  // Salva o quadro atualizado no vídeo
 
         char ch = waitKey(1);
