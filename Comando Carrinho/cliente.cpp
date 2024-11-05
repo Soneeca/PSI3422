@@ -30,7 +30,7 @@ void on_mouse(int event, int x, int y, int, void* userdata) {
     }
 }
 
-void desenhaTeclado(Mat_<COR> &teclado) {
+void desenhaTeclado(Mat_<Vec3b> &teclado) {
     teclado.setTo(Scalar(128, 128, 128));  // Fundo cinza
 
     for (int i = 0; i < 3; i++) {
@@ -78,18 +78,19 @@ int main(int argc, char *argv[]) {
     string video_out = (argc > 2) ? argv[2] : "";
     char modo = (argc > 3) ? argv[3][0] : 't';
     VideoWriter vo;
-    if (!video_out.empty()) vo.open(video_out, VideoWriter::fourcc('X', 'V', 'I', 'D'), 20, Size(640, 240));
+    if (!video_out.empty()) vo.open(video_out, VideoWriter::fourcc('X', 'V', 'I', 'D'), 30, Size(480, 240));  // Configuração de gravação
 
     namedWindow("Controle", WINDOW_NORMAL);
     setMouseCallback("Controle", on_mouse);
 
-    Mat_<COR> teclado(240, 240, Vec3b(128, 128, 128));
-    Mat_<COR> frame, display;
+    Mat_<Vec3b> teclado(240, 240, Vec3b(128, 128, 128));
+    Mat_<Vec3b> frame, display;
     char confirm = '0';
 
     while (true) {
         client.sendBytes(1, reinterpret_cast<BYTE*>(&confirm));
         client.receiveImgComp(frame);
+        
         if (frame.empty()) break;
 
         if (modo == 't') hconcat(teclado, frame, display);
@@ -98,7 +99,7 @@ int main(int argc, char *argv[]) {
         desenhaTeclado(teclado);  // Desenha o teclado com o estado atualizado
 
         imshow("Controle", display);
-        if (!video_out.empty()) vo << display;
+        if (!video_out.empty()) vo << display;  // Salva o quadro atualizado no vídeo
 
         char ch = waitKey(1);
         if (ch == 27) {  // ESC para sair
