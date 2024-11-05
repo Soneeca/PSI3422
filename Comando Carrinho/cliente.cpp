@@ -6,22 +6,65 @@ using namespace std;
 using namespace cv;
 
 int estado = 0;  // 0 = sem ação, 1-9 = comandos do teclado virtual
+bool mousePressed = false;  // Estado do mouse
 
 // Função de callback para o mouse
 void on_mouse(int event, int x, int y, int, void* userdata) {
     if (event == EVENT_LBUTTONDOWN) {
-        if (y < 100) {
-            if (x < 100) estado = 7;         // Setas para esquerda (↖)
-            else if (x < 200) estado = 8;    // Setas para cima (↑)
-            else estado = 9;                 // Setas para direita (↗)
-        } else if (y < 200) {
-            if (x < 100) estado = 4;         // Setas para esquerda (←)
-            else if (x < 200) estado = 5;    // Centro (parar) (⏹)
-            else estado = 6;                 // Setas para direita (→)
+        mousePressed = true;
+        if (y < 80) {
+            if (x < 80) estado = 1;         // ↖
+            else if (x < 160) estado = 2;    // ↑
+            else estado = 3;                 // ↗
+        } else if (y < 160) {
+            if (x < 80) estado = 4;         // ↰ (L invertido)
+            else if (x < 160) estado = 5;   // ⏹ (parada)
+            else estado = 6;                // ↱ (L)
         } else {
-            if (x < 100) estado = 1;         // Setas para esquerda para trás (↙)
-            else if (x < 200) estado = 2;    // Setas para baixo (↓)
-            else estado = 3;                 // Setas para direita para trás (↘)
+            if (x < 80) estado = 7;         // ↙
+            else if (x < 160) estado = 8;   // ↓
+            else estado = 9;                // ↘
+        }
+    } else if (event == EVENT_LBUTTONUP) {
+        mousePressed = false;
+    }
+}
+
+void desenhaTeclado(Mat_<COR> &teclado) {
+    teclado.setTo(Scalar(128, 128, 128));  // Fundo cinza
+
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            int x = j * 80;
+            int y = i * 80;
+            rectangle(teclado, Rect(x, y, 80, 80), Scalar(200, 200, 200), -1);
+
+            Scalar cor = (estado == (i * 3 + j + 1) && mousePressed) ? Scalar(0, 0, 255) : Scalar(100, 0, 0);
+
+            // Desenha setas com linhas em forma de L para os botões laterais
+            if (i == 0 && j == 0) { // ↖
+                line(teclado, Point(x + 60, y + 20), Point(x + 20, y + 60), cor, 2);
+                line(teclado, Point(x + 20, y + 60), Point(x + 60, y + 60), cor, 2);
+            } else if (i == 0 && j == 1) { // ↑
+                line(teclado, Point(x + 40, y + 20), Point(x + 40, y + 60), cor, 2);
+            } else if (i == 0 && j == 2) { // ↗
+                line(teclado, Point(x + 20, y + 20), Point(x + 60, y + 60), cor, 2);
+                line(teclado, Point(x + 20, y + 60), Point(x + 60, y + 60), cor, 2);
+            } else if (i == 1 && j == 0) { // ↰ (L invertido)
+                line(teclado, Point(x + 60, y + 40), Point(x + 20, y + 40), cor, 2);
+                line(teclado, Point(x + 20, y + 40), Point(x + 20, y + 60), cor, 2);
+            } else if (i == 1 && j == 1) { // ⏹ (parada)
+                circle(teclado, Point(x + 40, y + 40), 10, cor, 2);
+            } else if (i == 1 && j == 2) { // ↱ (L)
+                line(teclado, Point(x + 20, y + 40), Point(x + 60, y + 40), cor, 2);
+                line(teclado, Point(x + 60, y + 40), Point(x + 60, y + 60), cor, 2);
+            } else if (i == 2 && j == 0) { // ↙
+                line(teclado, Point(x + 60, y + 20), Point(x + 20, y + 60), cor, 2);
+            } else if (i == 2 && j == 1) { // ↓
+                line(teclado, Point(x + 40, y + 20), Point(x + 40, y + 60), cor, 2);
+            } else if (i == 2 && j == 2) { // ↘
+                line(teclado, Point(x + 20, y + 20), Point(x + 60, y + 60), cor, 2);
+            }
         }
     }
 }
@@ -42,7 +85,7 @@ int main(int argc, char *argv[]) {
     namedWindow("Controle", WINDOW_NORMAL);
     setMouseCallback("Controle", on_mouse);
 
-    Mat_<COR> teclado(240, 320, Vec3b(128, 128, 128));
+    Mat_<COR> teclado(240, 240, Vec3b(128, 128, 128));
     Mat_<COR> frame, display;
     char confirm = '0';
 
@@ -51,18 +94,10 @@ int main(int argc, char *argv[]) {
         client.receiveImgComp(frame);
         if (frame.empty()) break;
 
-        // Atualiza o display de acordo com o modo
         if (modo == 't') hconcat(teclado, frame, display);
         else display = frame;
 
-        // Desenha o teclado virtual com setas
-        vector<string> labels = {"↙", "↓", "↘", "←", "⏹", "→", "↖", "↑", "↗"};
-        for (int i = 0; i < labels.size(); i++) {
-            int x = (i % 3) * 100;
-            int y = (i / 3) * 100;
-            rectangle(teclado, Rect(x, y, 100, 100), Scalar(200, 200, 200), -1);
-            putText(teclado, labels[i], Point(x + 30, y + 60), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 0, 255), 2);
-        }
+        desenhaTeclado(teclado);  // Desenha o teclado com o estado atualizado
 
         imshow("Controle", display);
         if (!video_out.empty()) vo << display;
@@ -74,10 +109,8 @@ int main(int argc, char *argv[]) {
             break;
         }
 
-        // Envia o comando correspondente ao botão clicado
         if (estado != 0) {
             confirm = '0' + estado;
-            estado = 0;  // Reinicia o estado
         } else {
             confirm = '0';
         }
