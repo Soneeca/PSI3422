@@ -41,15 +41,13 @@ void desenhaTeclado(Mat_<COR> &teclado) {
 
             Scalar cor = (estado == (i * 3 + j + 1) && mousePressed) ? Scalar(0, 0, 255) : Scalar(100, 0, 0);
 
-            // Desenha setas com linhas em forma de L para os botões laterais
+            // Desenha setas para os botões
             if (i == 0 && j == 0) { // ↖
                 line(teclado, Point(x + 60, y + 20), Point(x + 20, y + 60), cor, 2);
-                line(teclado, Point(x + 20, y + 60), Point(x + 60, y + 60), cor, 2);
             } else if (i == 0 && j == 1) { // ↑
-                line(teclado, Point(x + 40, y + 20), Point(x + 40, y + 60), cor, 2);
+                line(teclado, Point(x + 20, y + 60), Point(x + 60, y + 20), cor, 2);
             } else if (i == 0 && j == 2) { // ↗
-                line(teclado, Point(x + 20, y + 20), Point(x + 60, y + 60), cor, 2);
-                line(teclado, Point(x + 20, y + 60), Point(x + 60, y + 60), cor, 2);
+                line(teclado, Point(x + 20, y + 60), Point(x + 60, y + 20), cor, 2);
             } else if (i == 1 && j == 0) { // ↰ (L invertido)
                 line(teclado, Point(x + 60, y + 40), Point(x + 20, y + 40), cor, 2);
                 line(teclado, Point(x + 20, y + 40), Point(x + 20, y + 60), cor, 2);
