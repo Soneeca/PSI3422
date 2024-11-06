@@ -5,63 +5,117 @@
 using namespace std;
 using namespace cv;
 
-int estado = 0;  // Comando inicial é parado
+int estado = 5;  // Começa com o comando 5 (parada)
 bool mousePressed = false;  // Estado do mouse
 
 // Função de callback para o mouse
-void on_mouse(int event, int c, int l, int, void* userdata) {
+void on_mouse(int event, int x, int y, int, void* userdata) {
     if (event == EVENT_LBUTTONDOWN) {
-        if (160 <= l && l < 240 && 0 <= c && c < 80) estado = 1;
-        else if (160 <= l && l < 240 && 80 <= c && c < 160) estado = 2;
-        else if (160 <= l && l < 240 && 160 <= c && c < 240) estado = 3;
-        else if (80 <= l && l < 160 && 0 <= c && c < 80) estado = 4;
-        else if (80 <= l && l < 160 && 80 <= c && c < 160) estado = 5;
-        else if (80 <= l && l < 160 && 160 <= c && c < 240) estado = 6;
-        else if (0 <= l && l < 80 && 0 <= c && c < 80) estado = 7;
-        else if (0 <= l && l < 80 && 80 <= c && c < 160) estado = 8;
-        else if (0 <= l && l < 80 && 160 <= c && c < 240) estado = 9;
-        else estado = 0;
+        mousePressed = true;
+        if (y < 80) {
+            if (x < 80) estado = 1;         // ↖
+            else if (x < 160) estado = 2;    // ↑
+            else estado = 3;                 // ↗
+        } else if (y < 160) {
+            if (x < 80) estado = 4;         // ↰ (L invertido)
+            else if (x < 160) estado = 5;   // ⏹ (parada)
+            else estado = 6;                // ↱ (L)
+        } else {
+            if (x < 80) estado = 7;         // ↙
+            else if (x < 160) estado = 8;   // ↓
+            else estado = 9;                // ↘
+        }
+    } else if (event == EVENT_LBUTTONUP) {
+        mousePressed = false;
+    }
+}
+
+void desenhaTeclado(Mat_<Vec3b> &teclado, int estado_atual) {
+    teclado.setTo(Scalar(128, 128, 128));  // Fundo cinza
+
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            int x = j * 80;
+            int y = i * 80;
+            rectangle(teclado, Rect(x, y, 80, 80), Scalar(200, 200, 200), -1);
+
+            Scalar cor = (estado_atual == (i * 3 + j + 1)) ? Scalar(0, 0, 255) : Scalar(100, 0, 0);
+
+            // Desenha setas para os botões
+            if (i == 0 && j == 0) { // ↖
+                line(teclado, Point(x + 60, y + 60), Point(x + 20, y + 20), cor, 2);
+            } else if (i == 0 && j == 1) { // ↑
+                line(teclado, Point(x + 40, y + 20), Point(x + 40, y + 60), cor, 2);
+            } else if (i == 0 && j == 2) { // ↗
+                line(teclado, Point(x + 20, y + 60), Point(x + 60, y + 20), cor, 2);
+            } else if (i == 1 && j == 0) { // ↰ (L invertido)
+                line(teclado, Point(x + 60, y + 40), Point(x + 20, y + 40), cor, 2);
+                line(teclado, Point(x + 20, y + 40), Point(x + 20, y + 60), cor, 2);
+            } else if (i == 1 && j == 1) { // ⏹ (parada)
+                circle(teclado, Point(x + 40, y + 40), 10, cor, 2);
+            } else if (i == 1 && j == 2) { // ↱ (L)
+                line(teclado, Point(x + 20, y + 40), Point(x + 60, y + 40), cor, 2);
+                line(teclado, Point(x + 60, y + 40), Point(x + 60, y + 60), cor, 2);
+            } else if (i == 2 && j == 0) { // ↙
+                line(teclado, Point(x + 60, y + 20), Point(x + 20, y + 60), cor, 2);
+            } else if (i == 2 && j == 1) { // ↓
+                line(teclado, Point(x + 40, y + 20), Point(x + 40, y + 60), cor, 2);
+            } else if (i == 2 && j == 2) { // ↘
+                line(teclado, Point(x + 20, y + 20), Point(x + 60, y + 60), cor, 2);
+            }
+        }
     }
 }
 
 int main(int argc, char *argv[]) {
-    if (argc != 2) {
-        cerr << "Uso: cliente <IP do servidor>\n";
+    if (argc < 2) {
+        cerr << "Uso: cliente1 <IP do servidor> [videosaida.avi] [t/c]" << endl;
         return 1;
     }
 
     CLIENT client(argv[1]);
-    Mat_<COR> a, gui(240, 240, COR(128, 128, 128)), tudo;
 
-    namedWindow("janela", WINDOW_NORMAL);
-    setMouseCallback("janela", on_mouse);
+    string video_out = (argc > 2) ? argv[2] : "";
+    char modo = (argc > 3) ? argv[3][0] : 't';
+    VideoWriter vo;
+    if (!video_out.empty()) vo.open(video_out, VideoWriter::fourcc('X', 'V', 'I', 'D'), 30, Size(480, 240));
+
+    namedWindow("Controle", WINDOW_NORMAL);
+    setMouseCallback("Controle", on_mouse);
+
+    Mat_<Vec3b> teclado(240, 240, Vec3b(128, 128, 128));
+    Mat_<Vec3b> frame, display;
+    char confirm = '0' + estado;  // Inicia com o comando 5 (parada)
 
     while (true) {
-        gui.setTo(COR(128, 128, 128));  // Define fundo cinza para o teclado
+        client.sendBytes(1, reinterpret_cast<BYTE*>(&confirm)); // Envio constante do último comando
+        client.receiveImgComp(frame);
 
-        client.receiveImgComp(a);
+        if (frame.empty()) break;
 
-        // Marca a região correspondente ao estado em vermelho
-        if (estado == 1) rectangle(gui, Rect(0, 160, 80, 80), Scalar(0, 0, 255), -1);
-        else if (estado == 2) rectangle(gui, Rect(80, 160, 80, 80), Scalar(0, 0, 255), -1);
-        else if (estado == 3) rectangle(gui, Rect(160, 160, 80, 80), Scalar(0, 0, 255), -1);
-        else if (estado == 4) rectangle(gui, Rect(0, 80, 80, 80), Scalar(0, 0, 255), -1);
-        else if (estado == 5) rectangle(gui, Rect(80, 80, 80, 80), Scalar(0, 0, 255), -1);
-        else if (estado == 6) rectangle(gui, Rect(160, 80, 80, 80), Scalar(0, 0, 255), -1);
-        else if (estado == 7) rectangle(gui, Rect(0, 0, 80, 80), Scalar(0, 0, 255), -1);
-        else if (estado == 8) rectangle(gui, Rect(80, 0, 80, 80), Scalar(0, 0, 255), -1);
-        else if (estado == 9) rectangle(gui, Rect(160, 0, 80, 80), Scalar(0, 0, 255), -1);
+        // Concatena o teclado e o frame de vídeo para exibir
+        if (modo == 't') hconcat(teclado, frame, display);
+        else display = frame;
 
-        hconcat(gui, a, tudo);
-        imshow("janela", tudo);
+        desenhaTeclado(teclado, estado);  // Desenha o teclado com o estado atualizado
 
-        client.sendUint(estado);  // Envia o comando atual
+        imshow("Controle", display);
+        if (!video_out.empty()) vo << display;  // Salva o quadro no vídeo
 
-        int comando = (signed char)(waitKey(1));  // Captura o comando de saída
-        client.sendUint(comando);
-        if (comando == 27) break;  // Encerra com a tecla ESC
+        char ch = waitKey(1);
+        if (ch == 27) {  // ESC para sair
+            confirm = 's';
+            client.sendBytes(1, reinterpret_cast<BYTE*>(&confirm));
+            break;
+        }
+
+        // Atualiza o comando a ser enviado, apenas se um novo botão foi pressionado
+        if (estado != confirm - '0') {
+            confirm = '0' + estado;
+        }
     }
 
+    if (vo.isOpened()) vo.release();
     destroyAllWindows();
     return 0;
 }
