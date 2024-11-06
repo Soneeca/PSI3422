@@ -27,7 +27,6 @@ void on_mouse(int event, int x, int y, int, void* userdata) {
         }
     } else if (event == EVENT_LBUTTONUP) {
         mousePressed = false;
-        estado = 0;  // Reseta o estado quando o botão do mouse é solto
     }
 }
 
@@ -89,33 +88,17 @@ int main(int argc, char *argv[]) {
     char confirm = '0';
 
     while (true) {
-        // Envia o estado se o mouse estiver pressionado
-        if (mousePressed) {
-            if (estado != 0) {
-                confirm = '0' + estado; // Atualiza o comando baseado no estado
-            } else {
-                confirm = '0'; // Nenhum comando
-            }
-            client.sendBytes(1, reinterpret_cast<BYTE*>(&confirm));
-        }
-
-        // Recebe a imagem do servidor
+        client.sendBytes(1, reinterpret_cast<BYTE*>(&confirm));
         client.receiveImgComp(frame);
-        if (frame.empty()) {
-            cerr << "Erro ao receber imagem do servidor" << endl;
-            break; // Caso não receba uma imagem, sai do loop
-        }
+        
+        if (frame.empty()) break;
 
-        // Exibe a imagem recebida e desenha o teclado
-        if (modo == 't') {
-            hconcat(teclado, frame, display); // Adiciona o teclado à imagem recebida
-        } else {
-            display = frame; // Exibe apenas a imagem recebida
-        }
+        if (modo == 't') hconcat(teclado, frame, display);
+        else display = frame;
 
         desenhaTeclado(teclado);  // Desenha o teclado com o estado atualizado
 
-        imshow("Controle", display); // Mostra a janela com a imagem combinada
+        imshow("Controle", display);
         if (!video_out.empty()) vo << display;  // Salva o quadro atualizado no vídeo
 
         char ch = waitKey(1);
@@ -123,6 +106,12 @@ int main(int argc, char *argv[]) {
             confirm = 's';
             client.sendBytes(1, reinterpret_cast<BYTE*>(&confirm));
             break;
+        }
+
+        if (estado != 0) {
+            confirm = '0' + estado;
+        } else {
+            confirm = '0';
         }
     }
 
