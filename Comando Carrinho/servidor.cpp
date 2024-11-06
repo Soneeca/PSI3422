@@ -1,4 +1,5 @@
 #include "projeto.hpp"
+#include "raspberry.hpp"
 #include <opencv2/opencv.hpp>
 #include <iostream>
 #include <wiringPi.h>
@@ -23,29 +24,100 @@ void setupMotores() {
     if (softPwmCreate(3, 0, 100)) exit(1);
 }
 
-void controlarMotores(uint32_t comando) {
+void controlarMotores(char comando) {
     switch (comando) {
-        case 1: cout << "Diagonal Cima Esquerda\n"; break;
-        case 2: cout << "Frente\n"; break;
-        case 3: cout << "Diagonal Cima Direita\n"; break;
-        case 4: cout << "Rotação Esquerda\n"; break;
-        case 5: cout << "Freio\n"; break;
-        case 6: cout << "Rotação Direita\n"; break;
-        case 7: cout << "Diagonal Baixo Esquerda\n"; break;
-        case 8: cout << "Trás\n"; break;
-        case 9: cout << "Diagonal Baixo Direita\n"; break;
-        default: cout << "Parado\n"; break;
+        case '1': // Diagonal Cima Esquerda
+            softPwmWrite(0, 0);
+            softPwmWrite(1, 50);
+            softPwmWrite(2, 50);
+            softPwmWrite(3, 0);
+            delay(100);
+            softPwmWrite(0, 50);
+            softPwmWrite(1, 0);
+            softPwmWrite(2, 50);
+            softPwmWrite(3, 0);
+            break;
+        case '2': // Frente
+            softPwmWrite(0, 50);
+            softPwmWrite(1, 0);
+            softPwmWrite(2, 50);
+            softPwmWrite(3, 0);
+            break;
+        case '3': // Diagonal Cima Direita
+            softPwmWrite(0, 50);
+            softPwmWrite(1, 0);
+            softPwmWrite(2, 0);
+            softPwmWrite(3, 50);
+            delay(100);
+            softPwmWrite(0, 50);
+            softPwmWrite(1, 0);
+            softPwmWrite(2, 50);
+            softPwmWrite(3, 0);
+            break;
+        case '4': // Rotação Esquerda
+            softPwmWrite(0, 0);
+            softPwmWrite(1, 50);
+            softPwmWrite(2, 50);
+            softPwmWrite(3, 0);
+            break;
+        case '5': // Freio
+            softPwmWrite(0, 100);
+            softPwmWrite(1, 100);
+            softPwmWrite(2, 100);
+            softPwmWrite(3, 100);
+            break;
+        case '6': // Rotação Direita
+            softPwmWrite(0, 50);
+            softPwmWrite(1, 0);
+            softPwmWrite(2, 0);
+            softPwmWrite(3, 50);
+            break;
+        case '7': // Diagonal Baixo Esquerda
+            softPwmWrite(0, 50);
+            softPwmWrite(1, 0);
+            softPwmWrite(2, 0);
+            softPwmWrite(3, 50);
+            delay(100);
+            softPwmWrite(0, 0);
+            softPwmWrite(1, 50);
+            softPwmWrite(2, 0);
+            softPwmWrite(3, 50);
+            break;
+        case '8': // Trás
+            softPwmWrite(0, 0);
+            softPwmWrite(1, 50);
+            softPwmWrite(2, 0);
+            softPwmWrite(3, 50);
+            break;
+        case '9': // Diagonal Baixo Direita
+            softPwmWrite(0, 0);
+            softPwmWrite(1, 50);
+            softPwmWrite(2, 50);
+            softPwmWrite(3, 0);
+            delay(100);
+            softPwmWrite(0, 0);
+            softPwmWrite(1, 50);
+            softPwmWrite(2, 0);
+            softPwmWrite(3, 50);
+            break;
+        default: 
+            softPwmStop(0);
+            softPwmStop(1);
+            softPwmStop(2);
+            softPwmStop(3);
+            break;
     }
 }
 
-int main() {
-    SERVER server;
+int main(int argc, char** argv) {
+    SERVER server; // Usa o construtor padrão
+
     server.waitConnection();
     setupMotores();
 
     VideoCapture cap(0);
     if (!cap.isOpened()) {
-        cerr << "Erro ao abrir a câmera.\n";
+        cerr << "Erro ao abrir a câmera." << endl;
         return 1;
     }
 
@@ -53,24 +125,27 @@ int main() {
     cap.set(CAP_PROP_FRAME_HEIGHT, 240);
 
     Mat_<COR> frame;
-    uint32_t comando = 5, ultimo_comando = 0;
+    char comando = '5';  // Comando inicial para o freio
+    char ultimo_comando = '0';  // Armazena o último comando para verificar mudanças
 
     while (true) {
-        server.receiveUint(comando);
+        server.receiveBytes(1, reinterpret_cast<BYTE*>(&comando));
+        if (comando == 's') break;
+
+        // Se o comando mudou, imprime e atualiza o último comando
         if (comando != ultimo_comando) {
-            cout << "Comando recebido: " << comando << endl;
-            controlarMotores(comando);
+            cout << "Novo comando recebido: " << comando << endl;
             ultimo_comando = comando;
         }
+
+        controlarMotores(comando);
 
         cap >> frame;
         if (frame.empty()) break;
 
         server.sendImgComp(frame);
-        server.receiveUint(comando);
-        if (comando == 27) break;
     }
 
-    cout << "Servidor finalizado.\n";
+    cout << "Servidor finalizado." << endl;
     return 0;
 }
