@@ -6,6 +6,7 @@ using namespace std;
 using namespace cv;
 
 int estado = 0;  // 0 = sem ação, 1-9 = comandos do teclado virtual
+int ultimoEstado = 0;  // Para verificar mudanças de estado
 bool mousePressed = false;  // Estado do mouse
 
 // Função de callback para o mouse
@@ -88,9 +89,14 @@ int main(int argc, char *argv[]) {
     char confirm = '0';
 
     while (true) {
-        client.sendBytes(1, reinterpret_cast<BYTE*>(&confirm));
+        // Envia o estado apenas se ele tiver mudado
+        if (estado != ultimoEstado) {
+            confirm = '0' + estado;
+            client.sendBytes(1, reinterpret_cast<BYTE*>(&confirm));
+            ultimoEstado = estado;  // Atualiza para o novo estado
+        }
+
         client.receiveImgComp(frame);
-        
         if (frame.empty()) break;
 
         if (modo == 't') hconcat(teclado, frame, display);
@@ -106,12 +112,6 @@ int main(int argc, char *argv[]) {
             confirm = 's';
             client.sendBytes(1, reinterpret_cast<BYTE*>(&confirm));
             break;
-        }
-
-        if (estado != 0) {
-            confirm = '0' + estado;
-        } else {
-            confirm = '0';
         }
     }
 
