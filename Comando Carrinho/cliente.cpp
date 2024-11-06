@@ -89,7 +89,6 @@ int main(int argc, char *argv[]) {
 
     while (true) {
         client.sendBytes(1, reinterpret_cast<BYTE*>(&confirm));
-        client.sendBytes(1, reinterpret_cast<BYTE*>(&confirm));
         client.receiveImgComp(frame);
         
         if (frame.empty()) break;
@@ -108,8 +107,12 @@ int main(int argc, char *argv[]) {
             client.sendBytes(1, reinterpret_cast<BYTE*>(&confirm));
             break;
         }
-        confirm = '0' + estado;
-        client.sendBytes(1, reinterpret_cast<BYTE*>(&confirm));
+
+        if (estado != 0) {
+            confirm = '0' + estado;
+        } else {
+            confirm = '0';
+        }
     }
 
     if (vo.isOpened()) vo.release();
