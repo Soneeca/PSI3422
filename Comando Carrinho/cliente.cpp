@@ -88,7 +88,7 @@ int main(int argc, char *argv[]) {
     char confirm = '0' + estado;  // Inicia com o comando 5 (parada)
 
     while (true) {
-        client.sendBytes(1, reinterpret_cast<BYTE*>(&confirm));
+        client.sendBytes(1, reinterpret_cast<BYTE*>(&confirm)); // Envio constante do último comando
         client.receiveImgComp(frame);
 
         if (frame.empty()) break;
