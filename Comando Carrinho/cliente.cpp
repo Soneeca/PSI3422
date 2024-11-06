@@ -5,64 +5,22 @@
 using namespace std;
 using namespace cv;
 
-int estado = 0;  // 0 = sem ação, 1-9 = comandos do teclado virtual
-bool mousePressed = false;  // Estado do mouse
+int estado = 5;  // Começa com o comando 5
 
-// Função de callback para o mouse
 void on_mouse(int event, int x, int y, int, void* userdata) {
     if (event == EVENT_LBUTTONDOWN) {
-        mousePressed = true;
-        if (y < 80) {
-            if (x < 80) estado = 1;         // ↖
-            else if (x < 160) estado = 2;    // ↑
-            else estado = 3;                 // ↗
-        } else if (y < 160) {
-            if (x < 80) estado = 4;         // ↰ (L invertido)
-            else if (x < 160) estado = 5;   // ⏹ (parada)
-            else estado = 6;                // ↱ (L)
+        if (y < 100) {
+            if (x < 100) estado = 7;
+            else if (x < 200) estado = 8;
+            else estado = 9;
+        } else if (y < 200) {
+            if (x < 100) estado = 4;
+            else if (x < 200) estado = 5;
+            else estado = 6;
         } else {
-            if (x < 80) estado = 7;         // ↙
-            else if (x < 160) estado = 8;   // ↓
-            else estado = 9;                // ↘
-        }
-    } else if (event == EVENT_LBUTTONUP) {
-        mousePressed = false;
-    }
-}
-
-void desenhaTeclado(Mat_<Vec3b> &teclado) {
-    teclado.setTo(Scalar(128, 128, 128));  // Fundo cinza
-
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-            int x = j * 80;
-            int y = i * 80;
-            rectangle(teclado, Rect(x, y, 80, 80), Scalar(200, 200, 200), -1);
-
-            Scalar cor = (estado == (i * 3 + j + 1) && mousePressed) ? Scalar(0, 0, 255) : Scalar(100, 0, 0);
-
-            // Desenha setas para os botões
-            if (i == 0 && j == 0) { // ↖
-                line(teclado, Point(x + 60, y + 60), Point(x + 20, y + 20), cor, 2);
-            } else if (i == 0 && j == 1) { // ↑
-                line(teclado, Point(x + 40, y + 20), Point(x + 40, y + 60), cor, 2);
-            } else if (i == 0 && j == 2) { // ↗
-                line(teclado, Point(x + 20, y + 60), Point(x + 60, y + 20), cor, 2);
-            } else if (i == 1 && j == 0) { // ↰ (L invertido)
-                line(teclado, Point(x + 60, y + 40), Point(x + 20, y + 40), cor, 2);
-                line(teclado, Point(x + 20, y + 40), Point(x + 20, y + 60), cor, 2);
-            } else if (i == 1 && j == 1) { // ⏹ (parada)
-                circle(teclado, Point(x + 40, y + 40), 10, cor, 2);
-            } else if (i == 1 && j == 2) { // ↱ (L)
-                line(teclado, Point(x + 20, y + 40), Point(x + 60, y + 40), cor, 2);
-                line(teclado, Point(x + 60, y + 40), Point(x + 60, y + 60), cor, 2);
-            } else if (i == 2 && j == 0) { // ↙
-                line(teclado, Point(x + 60, y + 20), Point(x + 20, y + 60), cor, 2);
-            } else if (i == 2 && j == 1) { // ↓
-                line(teclado, Point(x + 40, y + 20), Point(x + 40, y + 60), cor, 2);
-            } else if (i == 2 && j == 2) { // ↘
-                line(teclado, Point(x + 20, y + 20), Point(x + 60, y + 60), cor, 2);
-            }
+            if (x < 100) estado = 1;
+            else if (x < 200) estado = 2;
+            else estado = 3;
         }
     }
 }
@@ -78,14 +36,15 @@ int main(int argc, char *argv[]) {
     string video_out = (argc > 2) ? argv[2] : "";
     char modo = (argc > 3) ? argv[3][0] : 't';
     VideoWriter vo;
-    if (!video_out.empty()) vo.open(video_out, VideoWriter::fourcc('X', 'V', 'I', 'D'), 30, Size(480, 240));  // Configuração de gravação
+    if (!video_out.empty()) vo.open(video_out, VideoWriter::fourcc('X', 'V', 'I', 'D'), 30, Size(640, 240));
 
     namedWindow("Controle", WINDOW_NORMAL);
     setMouseCallback("Controle", on_mouse);
 
-    Mat_<Vec3b> teclado(240, 240, Vec3b(128, 128, 128));
-    Mat_<Vec3b> frame, display;
-    char confirm = '0';
+    Mat_<COR> teclado(240, 320, Vec3b(128, 128, 128));
+    Mat_<COR> frame, display;
+
+    char confirm = '0' + estado;  // Começa enviando o comando 5
 
     while (true) {
         client.sendBytes(1, reinterpret_cast<BYTE*>(&confirm));
@@ -93,25 +52,32 @@ int main(int argc, char *argv[]) {
         
         if (frame.empty()) break;
 
+        // Cria o display com o teclado virtual
         if (modo == 't') hconcat(teclado, frame, display);
         else display = frame;
 
-        desenhaTeclado(teclado);  // Desenha o teclado com o estado atualizado
+        // Desenha o teclado virtual
+        for (int i = 1; i <= 9; i++) {
+            string label = to_string(i);
+            int x = ((i - 1) % 3) * 100;
+            int y = ((i - 1) / 3) * 100;
+            rectangle(teclado, Rect(x, y, 100, 100), Scalar(200, 200, 200), -1);
+            putText(teclado, label, Point(x + 30, y + 60), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 0, 255), 2);
+        }
 
         imshow("Controle", display);
-        if (!video_out.empty()) vo << display;  // Salva o quadro atualizado no vídeo
+        if (!video_out.empty()) vo << display;
 
         char ch = waitKey(1);
-        if (ch == 27) {  // ESC para sair
+        if (ch == 27) {  // ESC termina o programa
             confirm = 's';
             client.sendBytes(1, reinterpret_cast<BYTE*>(&confirm));
             break;
         }
 
-        if (estado != 0) {
+        // Envia o comando correspondente ao botão clicado
+        if (estado != confirm - '0') {
             confirm = '0' + estado;
-        } else {
-            confirm = '0';
         }
     }
 
