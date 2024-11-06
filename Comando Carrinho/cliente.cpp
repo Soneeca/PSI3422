@@ -5,31 +5,26 @@
 using namespace std;
 using namespace cv;
 
-int estado = 5;  // Começa com o comando 5 (parada)
-bool mousePressed = false;  // Estado do mouse
+int estado = 5;  // Estado inicial como "Parado"
+bool mousePressed = false;  // Indica se o mouse está pressionado
 
 // Função de callback para o mouse
 void on_mouse(int event, int x, int y, int, void* userdata) {
     if (event == EVENT_LBUTTONDOWN) {
         mousePressed = true;
         if (y < 80) {
-            if (x < 80) estado = 1;         // ↖
-            else if (x < 160) estado = 2;    // ↑
-            else estado = 3;                 // ↗
+            estado = (x < 80) ? 1 : (x < 160) ? 2 : 3; // Define direção com base na posição do clique
         } else if (y < 160) {
-            if (x < 80) estado = 4;         // ↰ (L invertido)
-            else if (x < 160) estado = 5;   // ⏹ (parada)
-            else estado = 6;                // ↱ (L)
+            estado = (x < 80) ? 4 : (x < 160) ? 5 : 6;
         } else {
-            if (x < 80) estado = 7;         // ↙
-            else if (x < 160) estado = 8;   // ↓
-            else estado = 9;                // ↘
+            estado = (x < 80) ? 7 : (x < 160) ? 8 : 9;
         }
     } else if (event == EVENT_LBUTTONUP) {
         mousePressed = false;
     }
 }
 
+// Desenha o teclado visual com setas e cores
 void desenhaTeclado(Mat_<Vec3b> &teclado, int estado_atual) {
     teclado.setTo(Scalar(128, 128, 128));  // Fundo cinza
 
@@ -37,11 +32,11 @@ void desenhaTeclado(Mat_<Vec3b> &teclado, int estado_atual) {
         for (int j = 0; j < 3; j++) {
             int x = j * 80;
             int y = i * 80;
-            rectangle(teclado, Rect(x, y, 80, 80), Scalar(200, 200, 200), -1);
+            rectangle(teclado, Rect(x, y, 80, 80), Scalar(200, 200, 200), -1); // Células do teclado
 
             Scalar cor = (estado_atual == (i * 3 + j + 1)) ? Scalar(0, 0, 255) : Scalar(100, 0, 0);
 
-            // Desenha setas para os botões
+            // Desenha as setas para os botões
             if (i == 0 && j == 0) { // ↖
                 line(teclado, Point(x + 60, y + 60), Point(x + 20, y + 20), cor, 2);
             } else if (i == 0 && j == 1) { // ↑
@@ -69,53 +64,29 @@ void desenhaTeclado(Mat_<Vec3b> &teclado, int estado_atual) {
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
-        cerr << "Uso: cliente1 <IP do servidor> [videosaida.avi] [t/c]" << endl;
+        cerr << "Uso: cliente2 <IP do servidor>" << endl;
         return 1;
     }
 
-    CLIENT client(argv[1]);
-
-    string video_out = (argc > 2) ? argv[2] : "";
-    char modo = (argc > 3) ? argv[3][0] : 't';
-    VideoWriter vo;
-    if (!video_out.empty()) vo.open(video_out, VideoWriter::fourcc('X', 'V', 'I', 'D'), 30, Size(480, 240));
-
+    CLIENT client(argv[1]);  // Configuração do cliente para o IP fornecido
     namedWindow("Controle", WINDOW_NORMAL);
     setMouseCallback("Controle", on_mouse);
 
-    Mat_<Vec3b> teclado(240, 240, Vec3b(128, 128, 128));
-    Mat_<Vec3b> frame, display;
-    char confirm = '0' + estado;  // Inicia com o comando 5 (parada)
+    Mat_<Vec3b> teclado(240, 240, Vec3b(128, 128, 128));  // Janela de controle visual do teclado
 
     while (true) {
-        client.sendBytes(1, reinterpret_cast<BYTE*>(&confirm)); // Envio constante do último comando
-        client.receiveImgComp(frame);
+        desenhaTeclado(teclado, estado);  // Atualiza o visual do teclado com base no estado atual
 
-        if (frame.empty()) break;
+        if (mousePressed) {
+            client.sendUint(estado);  // Envia o estado como uint32_t sempre que o mouse está pressionado
+        }
 
-        // Concatena o teclado e o frame de vídeo para exibir
-        if (modo == 't') hconcat(teclado, frame, display);
-        else display = frame;
-
-        desenhaTeclado(teclado, estado);  // Desenha o teclado com o estado atualizado
-
-        imshow("Controle", display);
-        if (!video_out.empty()) vo << display;  // Salva o quadro no vídeo
-
-        char ch = waitKey(1);
-        if (ch == 27) {  // ESC para sair
-            confirm = 's';
-            client.sendBytes(1, reinterpret_cast<BYTE*>(&confirm));
+        imshow("Controle", teclado);
+        if (waitKey(1) == 27) {  // Pressione ESC para sair
+            client.sendUint(0);  // Envia 0 para sinalizar parada
             break;
         }
-
-        // Atualiza o comando a ser enviado, apenas se um novo botão foi pressionado
-        if (estado != confirm - '0') {
-            confirm = '0' + estado;
-        }
     }
-
-    if (vo.isOpened()) vo.release();
     destroyAllWindows();
     return 0;
 }
