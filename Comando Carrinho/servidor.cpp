@@ -109,7 +109,7 @@ void controlarMotores(char comando) {
 }
 
 int main(int argc, char** argv) {
-    SERVER server; // Ajustado para usar o construtor padrão
+    SERVER server; // Usa o construtor padrão
 
     server.waitConnection();
     setupMotores();
@@ -124,11 +124,18 @@ int main(int argc, char** argv) {
     cap.set(CAP_PROP_FRAME_HEIGHT, 240);
 
     Mat_<COR> frame;
-    char comando = '5';  // Inicializando com o comando '5' para o freio
+    char comando = '5';  // Comando inicial para o freio
+    char ultimo_comando = '0';  // Armazena o último comando para verificar mudanças
 
     while (true) {
-        server.receiveBytes(1, reinterpret_cast<BYTE*>(&comando)); // Modificado para remover `<= 0`
+        server.receiveBytes(1, reinterpret_cast<BYTE*>(&comando));
         if (comando == 's') break;
+
+        // Se o comando mudou, imprime e atualiza o último comando
+        if (comando != ultimo_comando) {
+            cout << "Novo comando recebido: " << comando << endl;
+            ultimo_comando = comando;
+        }
 
         controlarMotores(comando);
 
